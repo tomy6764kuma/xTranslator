@@ -1587,7 +1587,7 @@ begin
   Result := isChar_WordDelimiter(c);
   if not Result then
     case c of
-      '-', '''', #8209, '’', #8720:
+      '-', '''', #8209, 'E', #8720:
         Result := true;
     end;
 end;
@@ -2768,7 +2768,11 @@ var
   i: integer;
 begin
   for i := 0 to 2 do
-    treearray[i].tag := 0;
+  begin
+    // treearray[i] ‚ª‹ó‚Á‚ÛiNilj‚Å‚È‚¯‚ê‚Îˆ—‚ğÀs‚·‚é
+    if Assigned(treearray[i]) then
+      treearray[i].tag := 0;
+  end;
 end;
 
 procedure sortAllTree;

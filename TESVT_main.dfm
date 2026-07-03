@@ -2159,6 +2159,12 @@ object Form1: TForm1
           ImageIndex = 50
           OnClick = xmlSave1Click
         end
+        object xmlBatchSave1: TMenuItem
+          Caption = 'lbl_XMLBatch'
+          Enabled = False
+          ImageIndex = 50
+          OnClick = xmlBatchSave1Click
+        end
       end
       object N8: TMenuItem
         Caption = '-'

@@ -176,7 +176,7 @@ Const
   aApiBaseName: array [0 .. MaxApiCount] of string = ('MsTranslate_', 'Yandex_', 'Baidu_', 'Youdao_', 'freeApi_', 'Google_', 'DeepL_', 'OpenAI_');
   aApiBaseNameArraySleepDefault: array [0 .. MaxApiCount] of integer = (3, 0, 0, 0, 0, 4, 3, 5);
   aApiBaseNameSleepDefault: array [0 .. MaxApiCount] of integer = (1, 1, 1, 1, 1, 4, 1, 1);
-  aApiBaseNameMaxCharPerMinDefault: array [0 .. MaxApiCount] of integer = (30000, 0, 0, 0, 0, 30000, 30000, 30000);
+  aApiBaseNameMaxCharPerMinDefault: array [0 .. MaxApiCount] of integer = (0, 0, 0, 0, 0, 0, 0, 0);
   aApiBaseuseFakeArray: array [0 .. MaxApiCount] of boolean = (false, false, false, false, false, true, false, true);
   aApiBaseArrayFunc: array [0 .. MaxApiCount] of tapiBaseTranslationArray = (msTranslationArray, nil, nil, nil, nil, GoogleTranslationArray, DeeplTranslationArray, OpenAITranslationArray);
   aApiBaseFunc: array [0 .. MaxApiCount] of tapiBaseTranslation = (msTranslation, yandexTranslation, baiduApiTranslation, youdaoApiTranslation, freeApiTranslation, googleTranslation, DeepLTranslation,
@@ -311,7 +311,7 @@ begin
   RESTRequest.Client := RESTClient;
   RESTRequest.Accept := 'application/json, text/plain; q=0.9, text/html;q=0.8,';
   RESTRequest.AcceptCharset := 'utf-8, *;q=0.8';
-  RESTRequest.Timeout := 45000;
+  RESTRequest.Timeout := 600000; // 45000から600000（10分）に変更
   RESTRequest.HandleRedirects := true;
 
   apiData.setProxyREST(RESTClient);

@@ -32,7 +32,7 @@ interface
 
 {$I _config.inc}
 
-uses Classes, sysUtils, Dialogs, VirtualTrees, VirtualTrees.basetree, VirtualTrees.types, comCtrls, math, zlibEx, TESVT_fstreamsave, TESVT_Const,
+uses Classes, sysUtils, Dialogs, VirtualTrees, VirtualTrees.basetree, VirtualTrees.types, comCtrls, math, ZlibEx, TESVT_fstreamsave, TESVT_Const,
   TESVT_Ressources, Generics.Collections, TESVT_Streams, TESVT_VMAD, TESVT_Utils;
 
 type

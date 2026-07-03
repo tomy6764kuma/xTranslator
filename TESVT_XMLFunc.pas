@@ -31,7 +31,7 @@ unit TESVT_XMLFunc;
 interface
 
 uses Windows, Messages, SysUtils, Classes, math, TESVT_Const, TESVT_Typedef, TESVT_Fuz, TESVT_espDefinition, TESVT_Ressources, TESVT_FastSearch,
-  OmniXML, TESVT_TranslateFunc, TESVT_Streams, TESVT_SSTFunc;
+  OmniXML, TESVT_TranslateFunc, TESVT_Streams, TESVT_SSTFunc, TESVT_NPCMap;
 
 procedure XMLExportbase(filename, addon_Name: string; listArray: tAlist; fProc: tCompareProc; bExportFuz: boolean);
 procedure XMLImportbase(filename: string; listArray: tAlist; idProc: integer; fProc, fprocVmad, fProcVmadtrans: tCompareProc; resetState: boolean);
@@ -83,6 +83,7 @@ var
   XMLDoc: IXMLDocument;
   fuzList: tStringList;
   r: rDialInfo;
+  sNpcNames, sNpcSexes: string;
 begin
   fuzList := tStringList.create;
   prepareSSTXML(listArray);
@@ -150,6 +151,45 @@ begin
         tmpchild := XMLDoc.CreateElement('Dest');
         tmpchild.text := sk.strans;
         strNode.AppendChild(tmpchild);
+
+        // npc / gender info
+        if CurrentTESVmode in [sTESVTsstEdit, sTESVEsp, sTESVEspStrings] then
+        begin
+          if sk.getRecSig = headerNPC_ then
+          begin
+            tmpchild := XMLDoc.CreateElement('Sex');
+            if isFemale in sk.sInternalparams then
+              tmpchild.text := 'Female'
+            else
+              tmpchild.text := 'Male';
+            strNode.AppendChild(tmpchild);
+          end
+          else if sk.isDialog and assigned(mainDialdata) then
+          begin
+            r := sk.GetResponseInfo;
+            try
+              if r.rFormid > 0 then
+              begin
+                sNpcNames := mainDialdata.getNpcNamesForDial(r.rFormid, r.rId);
+                sNpcSexes := mainDialdata.getNpcSexForDial(r.rFormid, r.rId);
+                if sNpcNames <> '' then
+                begin
+                  tmpchild := XMLDoc.CreateElement('NPC');
+                  tmpchild.text := sNpcNames;
+                  strNode.AppendChild(tmpchild);
+                end;
+                if sNpcSexes <> '' then
+                begin
+                  tmpchild := XMLDoc.CreateElement('Sex');
+                  tmpchild.text := sNpcSexes;
+                  strNode.AppendChild(tmpchild);
+                end;
+              end;
+            finally
+              Finalize(r);
+            end;
+          end;
+        end;
 
         // fuz info
         if bExportFuz and sk.isDialog then

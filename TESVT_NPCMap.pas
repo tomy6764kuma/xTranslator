@@ -67,12 +67,13 @@ type
     function getNPCFromInfoSF(loader: tTranslatorLoader; r: tRecord; fCurrent: tfield): boolean;
     function CTDADecoder(loader: tTranslatorLoader; Qust: cardinal; r: tRecord; startIndex: integer = 0; bBreakOnAnam: boolean = false; Recurse: integer = 0): boolean;
     function AddNPCToList(loader: tTranslatorLoader; formID: cardinal; defaultSig: sheaderSig; fallbackName: string = ''): boolean;
-    procedure AddNPCToListEx(npc: string);
+    procedure AddNPCToListEx(npc: string; gender: integer);
     procedure clearSceneParse;
     function getNPCName(r: tRecord; formID: cardinal; defaultSig: sheaderSig): string;
   public
     current: cardinal;
     lNpcName: tmcStringList;
+    lNpcSex: tlist;
     lDialListByInfo: tlist;
     lDialListByNPC: tlist;
     lSceneParse: tlist;
@@ -81,6 +82,8 @@ type
     procedure fillList(l: tstrings; filter: string);
     function getNpcForDial(r: rDialInfo): boolean; overload;
     procedure getNpcForDial(l: tstrings; info: cardinal; response: integer; bDoClear: boolean); overload;
+    function getNpcSexForDial(info: cardinal; response: integer): string;
+    function getNpcNamesForDial(info: cardinal; response: integer): string;
     function isDialFromActor(actor: integer; rinfo: rDialInfo): boolean;
     function getNPCIdByName(npc: string): integer;
     function reduceNpcName(npc: string; doExplode: boolean = false): string;
@@ -443,6 +446,7 @@ begin
   lNpcName.ObjSorted := false;
   lNpcName.sorted := true;
   lNpcName.Duplicates := dupIgnore;
+  lNpcSex := tlist.create;
   lDialListByInfo := tlist.create;
   lDialListByNPC := tlist.create;
   lSceneParse := tlist.create;
@@ -455,6 +459,7 @@ var
   i: integer;
 begin
   lNpcName.free;
+  lNpcSex.free;
   // free up list (need to destroy only one content)
   for i := 0 to pred(lDialListByInfo.count) do
     tDialData(lDialListByInfo[i]).free;
@@ -535,6 +540,66 @@ begin
           l.add(reduceNpcName(lNpcName[index], false));
     end;
   end;
+end;
+
+function TImportDial.getNpcSexForDial(info: cardinal; response: integer): string;
+var
+  index, i: integer;
+  dD: tDialData;
+  genders: string;
+begin
+  genders := '';
+  dummy.setdata(info, response, 0);
+  if FastListSearch(lDialListByInfo, CompareDialDataInfoAndResponse, dummy, index, true) then
+  begin
+    for i := index to pred(lDialListByInfo.count) do
+    begin
+      dD := lDialListByInfo[i];
+      if (dD.iInfo <> info) or (dD.iResponse <> response) then
+        break;
+      if lNpcName.ObjFind(dD.iNpc, index) then
+      begin
+        if dD.iNpc < lNpcSex.Count then
+        begin
+          case integer(lNpcSex[dD.iNpc]) of
+            0: if pos('Male', genders) = 0 then genders := genders + 'Male, ';
+            1: if pos('Female', genders) = 0 then genders := genders + 'Female, ';
+            2: if pos('Player', genders) = 0 then genders := genders + 'Player, ';
+          end;
+        end;
+      end;
+    end;
+  end;
+  if genders <> '' then
+    SetLength(genders, length(genders) - 2);
+  result := genders;
+end;
+
+function TImportDial.getNpcNamesForDial(info: cardinal; response: integer): string;
+var
+  index, i: integer;
+  dD: tDialData;
+  names: string;
+begin
+  names := '';
+  dummy.setdata(info, response, 0);
+  if FastListSearch(lDialListByInfo, CompareDialDataInfoAndResponse, dummy, index, true) then
+  begin
+    for i := index to pred(lDialListByInfo.count) do
+    begin
+      dD := lDialListByInfo[i];
+      if (dD.iInfo <> info) or (dD.iResponse <> response) then
+        break;
+      if lNpcName.ObjFind(dD.iNpc, index) then
+      begin
+        if pos(lNpcName[index], names) = 0 then
+          names := names + reduceNpcName(lNpcName[index], false) + ', ';
+      end;
+    end;
+  end;
+  if names <> '' then
+    SetLength(names, length(names) - 2);
+  result := names;
 end;
 
 function TImportDial.reduceNpcName(npc: string; doExplode: boolean = false): string;
@@ -994,7 +1059,7 @@ begin
   end;
 end;
 
-procedure TImportDial.AddNPCToListEx(npc: string);
+procedure TImportDial.AddNPCToListEx(npc: string; gender: integer);
 var
   npcIndex, tmpNPCid: integer;
   dD: tDialData;
@@ -1003,6 +1068,7 @@ begin
   begin
     tmpNPCid := lNpcName.count;
     lNpcName.AddObject(npc, tObject(lNpcName.count));
+    lNpcSex.Add(pointer(gender));
   end
   else
     tmpNPCid := integer(lNpcName.objects[npcIndex]);
@@ -1047,17 +1113,24 @@ var
   formFlst: cardinal;
   i: integer;
   f: tfield;
+  gender: integer;
 begin
   result := false;
+  gender := 2; // unknown/player
   if fallbackName <> '' then
   begin
-    AddNPCToListEx(fallbackName);
+    AddNPCToListEx(fallbackName, gender);
     exit(true);
   end;
   if formID <> 0 then
   begin
     result := true;
     r := loader.espLoader.getFastRecord(formID);
+    if Assigned(r) and ((r.header.name = headerACHR) or (r.header.name = headerREFR)) then
+    begin
+      formID := loader.espLoader.getFastRefr(formID);
+      r := loader.espLoader.getFastRecord(formID);
+    end;
     if Assigned(r) and (r.header.name = headerFLST) then
     begin
       for i := 0 to pred(r.fList.count) do
@@ -1068,12 +1141,29 @@ begin
           move(f.buffer[0], formFlst, SizeOf(formFlst));
           formFlst := loader.espLoader.setFormIdMapping(r, formFlst);
           rFlst := loader.espLoader.getFastRecord(formFlst);
-          AddNPCToListEx(getNPCName(rFlst, formFlst, defaultSig));
+          gender := 2;
+          if Assigned(rFlst) and (rFlst.header.name = headerNPC_) then
+          begin
+            if getBit(rFlst.getCardinalfromDataRef(headerACBS), 0) then
+              gender := 1
+            else
+              gender := 0;
+          end;
+          AddNPCToListEx(getNPCName(rFlst, formFlst, defaultSig), gender);
         end;
       end
     end
     else
-      AddNPCToListEx(getNPCName(r, formID, defaultSig));
+    begin
+      if Assigned(r) and (r.header.name = headerNPC_) then
+      begin
+        if getBit(r.getCardinalfromDataRef(headerACBS), 0) then
+          gender := 1
+        else
+          gender := 0;
+      end;
+      AddNPCToListEx(getNPCName(r, formID, defaultSig), gender);
+    end;
   end;
 end;
 

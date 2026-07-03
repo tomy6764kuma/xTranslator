@@ -24,7 +24,7 @@ DeepL_Label=DeepL
 #Data Limit per query - changing these values can cause a server error
 #----------------------------------------------------------
 Google_CharLimit=7500
-OpenAI_CharLimit=7500
+OpenAI_CharLimit=2000
 MsTranslate_CharLimit=9999
 Yandex_CharLimit=0
 freeApi_CharLimit=0
@@ -35,7 +35,7 @@ DeepL_CharLimit=9000
 #Data Limit per query - changing these values can cause a server error
 #----------------------------------------------------------
 Google_ArrayLimit=99
-OpenAI_ArrayLimit=49
+OpenAI_ArrayLimit=15
 MsTranslate_ArrayLimit=49
 Yandex_ArrayLimit=0
 freeApi_ArrayLimit=0
@@ -46,7 +46,7 @@ DeepL_ArrayLimit=49
 #PauseTime Between array query (in second) - changing these values can cause a server error
 #----------------------------------------------------------
 Google_ArrayTimePause=4
-OpenAI_ArrayTimePause=4
+OpenAI_ArrayTimePause=2
 MsTranslate_ArrayTimePause=2
 Yandex_ArrayTimePause=0
 freeApi_ArrayTimePause=0
@@ -54,16 +54,16 @@ Youdao_ArrayTimePause=0
 Baidu_ArrayTimePause=0
 DeepL_ArrayTimePause=2
 #----------------------------------------------------------
-#Max Chars sent per minute - changing these values can cause a server error
+#Max Chars sent per minute - changing these values can cause a server error (0 means no limit)
 #----------------------------------------------------------
-Google_ArrayMaxCharPerMin=30000
-OpenAI_ArrayMaxCharPerMin=30000
-MsTranslate_ArrayMaxCharPerMin=30000
+Google_ArrayMaxCharPerMin=0
+OpenAI_ArrayMaxCharPerMin=0
+MsTranslate_ArrayMaxCharPerMin=0
 Yandex_ArrayMaxCharPerMin=0
 freeApi_ArrayMaxCharPerMin=0
 Youdao_ArrayMaxCharPerMin=0
 Baidu_ArrayMaxCharPerMin=0
-DeepL_ArrayMaxCharPerMin=30000
+DeepL_ArrayMaxCharPerMin=0
 #----------------------------------------------------------
 #PauseTime Between single query (in second) - changing these values can cause a server error
 #----------------------------------------------------------
@@ -86,7 +86,7 @@ Youdao_ApiUrl=http://openapi.youdao.com/api?appKey=%s&q=%s&from=%s&to=%s&sign=%s
 Google_ApiUrl=https://translate.googleapis.com/translate_a/single?client=gtx&sl=%s&tl=%s&dt=t&q=%s 
 DeepL_ApiUrl=https://api-free.deepl.com/v2/translate?auth_key=%s&split_sentences=1&source_lang=%s&target_lang=%s{text}
 DeepL_ProApiUrl=https://api.deepl.com/v2/translate?auth_key=%s&split_sentences=1&source_lang=%s&target_lang=%s{text}
-OpenAI_ApiUrl=https://api.openai.com/v1/chat/completions
+OpenAI_ApiUrl=http://127.0.0.1:5005/v1/chat/completions
 OpenAI_DefaultQuery=Translate the following text to %lang_dest%, the text structure must be exactly the same, also keep the <tags> and numbers intact and keep the linebreaks strictly as they are without new ones:
 #up to 10 default model (0-9)
 OpenAI_Model0=gpt-3.5-turbo

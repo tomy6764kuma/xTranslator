@@ -1,3 +1,45 @@
+# xTranslator (Custom Forked Edition)
+
+This is a customized fork of MGuffin's xTranslator, modified to support metadata exporting for AI translation and fix built-in API translation stability issues.
+
+### Customized Features:
+1. **NPC Details to SST XML Export**: Writes NPC speaker name (`<NPC>`) and gender (`<Sex>`) tags to the exported SST XML files. This is essential for AI-driven contextual translation tools (such as [Bethesda AI Translator](https://github.com/tomy6764kuma/Bethesda-AI-Translator)).
+2. **Batch XML Export**: Added a menu option (`File` > `xmlBatchSave`) to batch export SST XMLs for all currently loaded ESP/ESM plugins at once.
+3. **API Translation Fixes**: Resolves throttling, wait-time calculation, and division-by-zero errors when auto-translating using API keys with quota limits.
+
+### How to Use:
+1. Go to the [Releases](https://github.com/tomy6764kuma/xTranslator/releases) page.
+2. Download the pre-built `xTranslator_custom.zip`.
+3. Extract and launch the executable.
+
+---
+
+# xTranslator (改造フォーク版)
+
+本リポジトリは、MGuffin 氏の xTranslator をベースに、AI翻訳ツールとの連携強化および API 翻訳の安定化のための改修を加えたフォーク版です。
+
+### 追加・変更された機能:
+1. **SST XML への NPC 情報（名前・性別）の出力**: エクスポートされる XML 内に、会話を喋る NPC の名前（`<NPC>`）と性別（`<Sex>`）をタグとして出力します。これにより、[Bethesda AI Translator](https://github.com/tomy6764kuma/Bethesda-AI-Translator) などの AI 翻訳支援ツールで NPC ごとの口調（人称や話し方）を正しく反映させた翻訳が可能になります。
+2. **XML 一括保存（Batch XML Export）**: メニューの `File` > `XML一括保存` から、ロードされているすべての ESP/ESM ファイルに対して、一括で XML ファイルをエクスポートする機能を追加しました。
+3. **API 翻訳のウェイト・バグ修正**: 内蔵 of API 翻訳機能を使用する際、制限（Quota）に達した際の待機時間の計算やゼロ除算等によるフリーズ・エラーを修正し、安定して自動翻訳を実行できるようにしました。
+
+### 使用方法:
+1. 右サイドバーの [Releases](https://github.com/tomy6764kuma/xTranslator/releases) ページに移動します。
+2. ビルド済みの `xTranslator_custom.zip` をダウンロードします。
+3. アーカイブを展開し、実行ファイルを開いて使用してください。
+
+---
+
+### Credits / Acknowledgments
+* **Original Author**: Special thanks to **MGuffin** for creating the amazing original **[xTranslator](https://github.com/MGuffin/xTranslator)** tool.
+* This fork is maintained solely to add metadata export compatibility for Bethesda AI Translator.
+
+### 謝辞
+* **オリジナル作者**: 素晴らしい本家ツール **[xTranslator](https://github.com/MGuffin/xTranslator)** を開発してくださった **MGuffin** 氏に心より感謝いたします。
+* 本フォーク版は、Bethesda AI Translator との互換性（NPCタグ等の出力）を追加する目的で維持・公開されています。
+
+---
+
 # _xTranslator
 
 This software is an advanced tool for to translate Skyrim, SkyrimSE and Fallout4 mods from a language to another one.

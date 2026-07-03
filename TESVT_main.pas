@@ -1,4 +1,4 @@
-﻿{
+{
   Fallout4translator - TESVTranslator - sseTranslator  by McGuffin  mguffin[arobase]gmail.com
   main distribution here:  http://www.nexusmods.com/skyrimspecialedition/mods/134?
 
@@ -40,7 +40,7 @@ uses Windows, Messages, SysUtils, Classes, Controls, Forms, Graphics, StdCtrls, 
   TESVT_SSTFunc, TESVT_Undo, TESVT_StringsFunc, TESVT_XMLFunc, TESVT_MainLoader, TESVT_SpellCheck, TESVT_Fuz, TESVT_Utils, MMSystem,
   TESVT_StringsStatus, TESVT_Threads, SyncObjs, TESVT_Batcher, TESVT_TranslatorApi, PsAPI, Grids, IdBaseComponent,
   TESVT_NpcMap, System.ImageList, System.UITypes, urlSubs, RegularExpressionsConsts, System.inifiles, ioutils, VirtualTrees.types,
-  Vcl.Themes, TESVT_RegexUtils, VirtualTrees.BaseAncestorVCL, VirtualTrees.BaseTree, VirtualTrees.AncestorVCL, HtmlGlobals;
+  Vcl.Themes, TESVT_RegexUtils, VirtualTrees.BaseAncestorVCL, VirtualTrees.BaseTree, VirtualTrees.AncestorVCL, HtmlGlobals, stdActns;
 
 type
   rCommandData = record
@@ -123,6 +123,7 @@ type
     N3: TMenuItem;
     MenuCloseALL1: TMenuItem;
     xmlSave1: TMenuItem;
+    xmlBatchSave1: TMenuItem;
     LoadCurrentXML1: TMenuItem;
     TimerLD: TTimer;
     N1: TMenuItem;
@@ -473,6 +474,7 @@ type
     procedure CollapseAll1Click(Sender: TObject);
     procedure MenuCloseALL1Click(Sender: TObject);
     procedure xmlSave1Click(Sender: TObject);
+    procedure xmlBatchSave1Click(Sender: TObject);
     procedure LoadCurrentXML1Click(Sender: TObject);
     procedure TimerLDTimer(Sender: TObject);
     procedure SkyTreeFocusChanged(Sender: TBaseVirtualTree; Node: PVirtualNode; Column: TColumnIndex);
@@ -916,6 +918,9 @@ uses TESVT_EspCompareOpts, TESVT_replaceAll, SynHighlighterPex, TESVT_AddId, TES
   TESVT_delocOpts, TESVT_Browser, TESVT_Colab, TESVT_ColabFilter, TESVT_Codepage, TESVT_ChooseCP, TESVT_ToolBox, TESVT_AdvSearch,
   TESVT_DefUIGen, TESVT_FormData, TESVT_HeaderWizard, TESVT_commandProcessor, TESVT_TranslatorApiDialog, TESVT_RtlPreview;
 {$R *.dfm}
+
+procedure prepareFuzList(bsafile: string; bsaIndex: integer); forward;
+
 // ------------------------------
 
 procedure TForm1.openlog;
@@ -8726,6 +8731,17 @@ begin
   if not assigned(fProc) then
     exit;
 
+  if assigned(MainLoader) and (MainLoader.loaderType = sLoaderTypeEsp) then
+  begin
+    if not assigned(mainDialdata) or (mainDialdata.current <> MainLoader.uGuid) then
+    begin
+      freeandNil(mainDialdata);
+      mainDialdata := TImportDial.create;
+      mainDialdata.current := MainLoader.uGuid;
+      mainDialdata.generateNpcMap(MainLoader);
+    end;
+  end;
+
   filename := SaveFileDialog(getRes('SaveCurrentXML'), Game_XMLFolder, format('%s_%s_%s', [tmpAddon, Sourcelanguage, Destlanguage]), getRes('FilterXML|*.XML'));
   if (filename = '') then
     exit;
@@ -8735,6 +8751,147 @@ begin
   XMLExportbase(format('%s.xml', [removefileext(filename, '.xml')]), MainLoader.addon_name, MainLoader.listArray, fProc, bExportFuz);
   stopStuff;
   dofeedback(getRes('XMLExported'), true, [askPanel]);
+end;
+
+procedure TForm1.xmlBatchSave1Click(Sender: TObject);
+var
+  i, j: integer;
+  loader: tTranslatorLoader;
+  tmpAddon: string;
+  filename: string;
+  fProc: tcompareproc;
+  bExportFuz: boolean;
+  outDir: string;
+  espCount: integer;
+  processedCount: integer;
+begin
+  espCount := 0;
+  for i := 0 to loaderList.items.count - 1 do
+  begin
+    loader := tTranslatorLoader(loaderList.items.Objects[i]);
+    if assigned(loader) and (loader.loaderType = sLoaderTypeEsp) then
+      inc(espCount);
+  end;
+
+  if espCount = 0 then
+  begin
+    dofeedback(getRes('NoEspEsmLoaded'), true);
+    exit;
+  end;
+
+  form2.close; // security
+  formXMLOpt := tformXMLOpt.create(self);
+  formXMLOpt.RadioGroup1.itemIndex := iXMLExportOpt;
+  formXMLOpt.CheckBox1.visible := false;
+  formXMLOpt.CheckBox2.visible := true;
+  formXMLOpt.CheckBox2.checked := false;
+  
+  formXMLOpt.CheckBox2.Enabled := false;
+  for i := 0 to loaderList.items.count - 1 do
+  begin
+    loader := tTranslatorLoader(loaderList.items.Objects[i]);
+    if assigned(loader) and (loader.loaderType = sLoaderTypeEsp) then
+      if isFuzLoaded(loader, fuz.current) or isFuzCompatible(loader) then
+      begin
+        formXMLOpt.CheckBox2.Enabled := true;
+        break;
+      end;
+  end;
+
+  bExportFuz := false;
+  formXMLOpt.showmodal;
+  fProc := nil;
+  if formXMLOpt.ModalResult = mrOK then
+  begin
+    bExportFuz := formXMLOpt.CheckBox2.checked;
+    iXMLExportOpt := formXMLOpt.RadioGroup1.itemIndex;
+    case iXMLExportOpt of
+      1:
+        fProc := compareOptTranslatedAndValidated;
+      2:
+        fProc := compareOptSelection;
+      3:
+        fProc := compareSourceDestDiffandColab;
+    else
+      fProc := compareOptEverything;
+    end;
+  end;
+  formXMLOpt.free;
+  if not assigned(fProc) then
+    exit;
+
+  outDir := '';
+  with TBrowseForFolder.Create(nil) do
+    try
+      BrowseOptions := BrowseOptions + [bifStatusText, bifUseNewUI];
+      caption := getRes('SelectXMLOutputDir');
+      if (Game_XMLFolder <> '') and directoryExists(Game_XMLFolder) then
+        folder := cleanString(Game_XMLFolder, '\');
+      if Execute then
+        outDir := cleanString(folder, '\') + '\';
+    finally
+      Free;
+    end;
+
+  if outDir = '' then
+    exit;
+
+  Game_XMLFolder := outDir;
+
+  processedCount := 0;
+  for i := 0 to loaderList.items.count - 1 do
+  begin
+    loader := tTranslatorLoader(loaderList.items.Objects[i]);
+    if assigned(loader) and (loader.loaderType = sLoaderTypeEsp) then
+    begin
+      tmpAddon := loader.getCleanAddonName(false);
+      
+      if not assigned(mainDialdata) or (mainDialdata.current <> loader.uGuid) then
+      begin
+        freeandNil(mainDialdata);
+        mainDialdata := TImportDial.create;
+        mainDialdata.current := loader.uGuid;
+        mainDialdata.generateNpcMap(loader);
+      end;
+
+      if bExportFuz then
+      begin
+        fuz.clear;
+        fuz.current := loader.uGuid;
+        fuz.espLoader := loader.espLoader;
+        getFuzFromLooseFiles(fuz.List);
+        FindVoiceBSAEx(loader.espLoader.mastersData, Game_FuzDataFolder, fuz.BsaList);
+        for j := 0 to pred(fuz.BsaList.count) do
+          prepareFuzList(Game_FuzDataFolder + fuz.BsaList[j], j);
+        fuz.sanitize(loader.espLoader.mastersData);
+        fuz.cleanUnused(loader.listArray);
+        fuz.buildVoiceType;
+      end;
+
+      if not loader.initialized then
+        initializeLoader(loader);
+
+      filename := format('%s%s_%s_%s.xml', [outDir, tmpAddon, Sourcelanguage, Destlanguage]);
+      startStuff(formatres('ExportXMLRes', [tmpAddon]));
+      XMLExportbase(filename, loader.addon_name, loader.listArray, fProc, bExportFuz);
+      stopStuff;
+      inc(processedCount);
+    end;
+  end;
+
+  if assigned(MainLoader) then
+  begin
+    if not assigned(mainDialdata) or (mainDialdata.current <> MainLoader.uGuid) then
+    begin
+      freeandNil(mainDialdata);
+      mainDialdata := TImportDial.create;
+      mainDialdata.current := MainLoader.uGuid;
+      mainDialdata.generateNpcMap(MainLoader);
+    end;
+    generateFuzMap;
+  end;
+
+  dofeedback(format('%d XML files exported.', [processedCount]), true, [askPanel]);
 end;
 
 procedure TForm1.zoom1Click(Sender: TObject);
@@ -10642,7 +10799,7 @@ begin
         if sk.sinternalparams * [OnTranslationApiArray, OnTranslationApiArray_block2] = [OnTranslationApiArray] then
         begin
           chrCountTmp := apiData.getCharCountForApi(getNormalizedSource(sk));
-          if (chrcountQuota >= charCountQuotaPerMinute) then
+          if (charCountQuotaPerMinute > 0) and (chrcountQuota >= charCountQuotaPerMinute) then
             break;
           if (chrCountTmp + chrCount > apiCharmax) then
             continue
@@ -10752,9 +10909,12 @@ begin
 
       if iAuthBlock > 0 then
       begin
-        if (chrcountQuota >= charCountQuotaPerMinute) or (apiTimeQuota > timeMinute) then
+        if ((charCountQuotaPerMinute > 0) and (chrcountQuota >= charCountQuotaPerMinute)) or (apiTimeQuota > timeMinute) then
         begin
-          iWaitTime := max(timeMinute - apiTimeQuota, apiData.aApiBaseNameArraySleep[iApiNumber]);
+          if timeMinute > apiTimeQuota then
+            iWaitTime := max(timeMinute - apiTimeQuota, apiData.aApiBaseNameArraySleep[iApiNumber])
+          else
+            iWaitTime := apiData.aApiBaseNameArraySleep[iApiNumber];
           apiTimeQuota := 0;
           chrcountQuota := 0;
         end
